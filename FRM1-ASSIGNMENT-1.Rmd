@@ -1,0 +1,81 @@
+---
+title: "FRM 1 - ASSIGNMENT 1"
+author: "NGUYEN NGOC PHUNG"
+date: "5/7/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+![ASSIGNMENT QUESTION](C:/Users/Win 10/Pictures/HW1.png)
+## GET THE IBM STOCK PRICE FROM 2015-2019
+```{r}
+# IMPORT THE LIBRARY
+library(tseries)
+library('quantmod')
+library('tidyquant')
+
+# GET THE STOCK PRICE DATA
+stock_price= get.hist.quote(instrument = "ibm", start = "2015-01-01", end = "2019-12- 31",quote = "AdjClose")
+``` 
+### PLOTTING AND HISTOGRAM OF STOCK PRICE St
+```{r}
+# Plotting of stock price
+plot(stock_price,col="darkblue",lwd=1.5, main= 'STOCK PRICE IBM')
+
+# Histogram of stock price
+hist(coredata(stock_price), col='darkmagenta', breaks=40, main='HISTOGRAM; STOCK PRICE IBM')
+```
+
+### HISTORICAL METHOD : VALUE AT RISK AT 5% (95% CONFIDENCE LEVEL)
+```{r}
+# First, we calculate the loss of each day by taking S(t-1)-S(t)
+loss <- -diff(stock_price,differences = 1)
+n<- length(loss)
+
+# Second, we sort the loss in ascending order @-@
+sorted_loss<- sort(coredata(loss))
+
+
+# Third, we calculate the VaR 95% by taking the 1193rd value of sorted_loss (n*0.95= 1193.2)
+# So VaR 95% of IBM is:
+VaR_95= sorted_loss[1193]
+VaR_95
+
+# Plotting
+hist(coredata(loss), col='darkblue', breaks=40, main='HISTOGRAM OF LOSS IBM')
+abline(v=VaR_95,col='red')
+```
+
+
+### MONTE-CARLO METHOD: 
+```{r}
+# Loss in the last day (30-12-2019) is: 
+S_t<- coredata(stock_price)[1256] 
+
+# We simulate 1000 Z_t from N(0,1) @-@
+Z_t<-rnorm(1000)
+Z_t[1:10]
+
+# Calculate the mean and standard deviation:
+u<-mean(diff(log(stock_price),1)[-1,])
+sigma<-sd(diff(log(stock_price),1)[-1,])
+c(u, sigma)
+
+# So 1000 scenarios of S(t+1) is:
+S_t1<-S_t*exp((u-(sigma^2)/2) + Z_t)
+
+# Plotting
+hist(S_t1, col='deeppink3', breaks=40, main='HISTOGRAM OF 1000 SIMULATION')
+```
+
+```{r}
+# Now, we calculate VaR by taking 5% quantile from the return (estimated) @-@
+return_monte <- log(S_t1/S_t)
+VaR_95_monte <- quantile(return_monte,prob=0.05)
+VaR_95_monte
+
+# Histogram of the simulated return @-@
+hist(return_monte, breaks = 70, col='darkblue', main='SIMULATED RETURN')
+abline(v=VaR_95_monte,col='red')
+```
+
